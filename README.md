@@ -1,10 +1,5 @@
 <div align="center">
 
-  <a href="https://github.com/ryo-ma/github-profile-trophy">
-    <img src="https://github-profile-trophy.vercel.app/?username=Hea092024&theme=radical&no-frame=true&margin-w=15" alt="Hector's Trophies" />
-  </a>
-  <br/>
-
   <a href="https://git.io/typing-svg">
     <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=600&size=30&pause=1000&color=F75C7E&center=true&vCenter=true&width=435&lines=Hi+I'm+Hector!;Frontend+Specialist;Python+%26+Backend+Explorer;Building+Discord+Bots" alt="Typing SVG" />
   </a>
@@ -47,8 +42,8 @@
   ### 📊 Hector's Performance
 
   <p>
-    <img src="https://github-readme-stats.vercel.app/api?username=Hea092024&show_icons=true&theme=radical&hide_border=true&bg_color=141321" alt="Hector's Stats" />
-    <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=Hea092024&layout=compact&theme=radical&hide_border=true&bg_color=141321" alt="Top Languages" />
+    <img src="https://github-readme-stats.vercel.app/api?username=Hea092024&show_icons=true&theme=radical&hide_border=true&bg_color=141321&cache_seconds=1800" alt="Hector's Stats" />
+    <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=Hea092024&layout=compact&theme=radical&hide_border=true&bg_color=141321&cache_seconds=1800" alt="Top Languages" />
   </p>
   
   <img src="https://github-readme-streak-stats.herokuapp.com/?user=Hea092024&theme=radical&hide_border=true&background=141321" />
