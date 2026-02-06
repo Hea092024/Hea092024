@@ -45,6 +45,6 @@
 
   <br/>
 
-  <img src="https://github.com/Hea092024/Hea092024/blob/output/github-contribution-grid-snake.svg" alt="Snake Animation" />
+  <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/output/github-contribution-grid-snake.svg" alt="Snake Animation" />
 
 </div>
