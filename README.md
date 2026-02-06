@@ -39,13 +39,12 @@
 
   <br/><br/>
 
-  ### 📊 Hector's Performance
+  ### 📊 Hector's Activity
 
-  <p>
-    <img src="https://github-readme-stats.vercel.app/api?username=Hea092024&show_icons=true&theme=radical&hide_border=true&bg_color=141321&cache_seconds=1800" alt="Hector's Stats" />
-    <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=Hea092024&layout=compact&theme=radical&hide_border=true&bg_color=141321&cache_seconds=1800" alt="Top Languages" />
-  </p>
-  
   <img src="https://github-readme-streak-stats.herokuapp.com/?user=Hea092024&theme=radical&hide_border=true&background=141321" />
+
+  <br/>
+
+  <img src="https://github.com/Hea092024/Hea092024/blob/output/github-contribution-grid-snake.svg" alt="Snake Animation" />
 
 </div>
