@@ -14,6 +14,7 @@ Required env vars:
 
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from collections import Counter
 
@@ -31,19 +32,34 @@ HEADERS = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json
 WINDOW_DAYS = 7
 
 
-def gql(query, variables=None):
-    r = requests.post(
-        GRAPHQL_URL,
-        headers=HEADERS,
-        json={"query": query, "variables": variables or {}},
-        timeout=30,
+def gql(query, variables=None, max_retries=3):
+    body = {"query": query, "variables": variables or {}}
+    last_response = None
+    for attempt in range(max_retries):
+        try:
+            r = requests.post(GRAPHQL_URL, headers=HEADERS, json=body, timeout=30)
+            last_response = r
+            # Retry on transient server errors
+            if r.status_code in (502, 503, 504) and attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # 1s, 2s
+                continue
+            r.raise_for_status()
+            payload = r.json()
+            if "errors" in payload:
+                sys.stderr.write(f"GraphQL errors: {payload['errors']}\n")
+                sys.exit(1)
+            return payload["data"]
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+            raise
+    # All retries exhausted with 5xx
+    sys.stderr.write(
+        f"GraphQL request failed after {max_retries} attempts: "
+        f"HTTP {last_response.status_code if last_response else '?'}\n"
     )
-    r.raise_for_status()
-    payload = r.json()
-    if "errors" in payload:
-        sys.stderr.write(f"GraphQL errors: {payload['errors']}\n")
-        sys.exit(1)
-    return payload["data"]
+    sys.exit(1)
 
 
 def fetch_user_and_repos(user):
