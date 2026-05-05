@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="340" viewBox="0 0 880 340" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
+  <rect width="880" height="340" rx="14" fill="#0E1116"/>
+
+  <text x="440" y="42" text-anchor="middle" fill="#8B95A7" font-size="11" letter-spacing="3" font-weight="600">BETTINGAIPRO &#xb7; PREDICTION PIPELINE</text>
+
+  <g transform="translate(30, 80)">
+    <rect width="240" height="180" rx="10" fill="#161A21" stroke="#252A33" stroke-width="1"/>
+    <rect x="0" y="0" width="240" height="3" rx="1.5" fill="#4F8FFF"/>
+    <text x="20" y="40" fill="#4F8FFF" font-size="11" font-weight="700" letter-spacing="2">SCOUT</text>
+    <text x="20" y="68" fill="#E8ECF1" font-size="16" font-weight="600">Groq &#xb7; Qwen3 32B</text>
+    <text x="20" y="92" fill="#8B95A7" font-size="12">Reads injuries, suspensions,</text>
+    <text x="20" y="108" fill="#8B95A7" font-size="12">form, rotation risk</text>
+    <line x1="20" y1="128" x2="220" y2="128" stroke="#252A33" stroke-width="1"/>
+    <text x="20" y="148" fill="#8B95A7" font-size="11">emits</text>
+    <text x="20" y="166" fill="#4F8FFF" font-size="13" font-weight="600">&#xb1;2.5 xG deltas</text>
+  </g>
+
+  <g transform="translate(275, 170)">
+    <line x1="0" y1="0" x2="35" y2="0" stroke="#475569" stroke-width="1.5"/>
+    <polygon points="33,-5 43,0 33,5" fill="#475569"/>
+  </g>
+
+  <g transform="translate(320, 80)">
+    <rect width="240" height="180" rx="10" fill="#161A21" stroke="#252A33" stroke-width="1"/>
+    <rect x="0" y="0" width="240" height="3" rx="1.5" fill="#FBA94A"/>
+    <text x="20" y="40" fill="#FBA94A" font-size="11" font-weight="700" letter-spacing="2">DIXON&#x2013;COLES</text>
+    <text x="20" y="68" fill="#E8ECF1" font-size="16" font-weight="600">Poisson engine</text>
+    <text x="20" y="92" fill="#8B95A7" font-size="12">Deterministic math.</text>
+    <text x="20" y="108" fill="#8B95A7" font-size="12">No LLM in the loop.</text>
+    <line x1="20" y1="128" x2="220" y2="128" stroke="#252A33" stroke-width="1"/>
+    <text x="20" y="148" fill="#8B95A7" font-size="11">computes</text>
+    <text x="20" y="166" fill="#FBA94A" font-size="13" font-weight="600">goal expectancies</text>
+  </g>
+
+  <g transform="translate(565, 170)">
+    <line x1="0" y1="0" x2="35" y2="0" stroke="#475569" stroke-width="1.5"/>
+    <polygon points="33,-5 43,0 33,5" fill="#475569"/>
+  </g>
+
+  <g transform="translate(610, 80)">
+    <rect width="240" height="180" rx="10" fill="#161A21" stroke="#252A33" stroke-width="1"/>
+    <rect x="0" y="0" width="240" height="3" rx="1.5" fill="#4F8FFF"/>
+    <text x="20" y="40" fill="#4F8FFF" font-size="11" font-weight="700" letter-spacing="2">JUDGE</text>
+    <text x="20" y="68" fill="#E8ECF1" font-size="16" font-weight="600">Gemini 3.1 Pro</text>
+    <text x="20" y="92" fill="#8B95A7" font-size="12">Grades the math output,</text>
+    <text x="20" y="108" fill="#8B95A7" font-size="12">issues final verdict</text>
+    <line x1="20" y1="128" x2="220" y2="128" stroke="#252A33" stroke-width="1"/>
+    <text x="20" y="148" fill="#8B95A7" font-size="11">outputs</text>
+    <text x="20" y="166" fill="#FBA94A" font-size="13" font-weight="600">Kelly-sized stake</text>
+  </g>
+
+  <text x="150" y="296" text-anchor="middle" fill="#475569" font-size="10" letter-spacing="2" font-weight="600">EXTRACTIVE LLM</text>
+  <text x="440" y="296" text-anchor="middle" fill="#475569" font-size="10" letter-spacing="2" font-weight="600">PURE MATH</text>
+  <text x="730" y="296" text-anchor="middle" fill="#475569" font-size="10" letter-spacing="2" font-weight="600">JUDGMENT LLM</text>
+</svg>
