@@ -62,31 +62,67 @@ def gql(query, variables=None, max_retries=5):
 
 
 def fetch_user_and_repos(user):
-    query = """
-    query($user: String!) {
-      user(login: $user) {
-        id
-        repositories(
-          first: 100,
-          ownerAffiliations: OWNER,
-          isFork: false
-        ) {
-          nodes {
-            name
-            isPrivate
-            defaultBranchRef { name }
-          }
-        }
-      }
-    }
+    """List the user's owned (non-fork) repos via REST API.
+
+    REST is more reliable than GraphQL for bulk listing — GitHub's GraphQL
+    backend is known to return 502 (query timeout) on user.repositories(first:100)
+    queries. We use REST here, then fall back to GraphQL for per-repo stats.
     """
-    data = gql(query, {"user": user})
-    u = data["user"]
-    return u["id"], u["repositories"]["nodes"]
+    rest_headers = {
+        "Authorization": f"Bearer {TOKEN}",
+        "Accept": "application/vnd.github+json",
+    }
+
+    # /user returns the authenticated user — gives us node_id (the GraphQL ID)
+    # needed later to filter commits by author in GraphQL.
+    r = requests.get("https://api.github.com/user", headers=rest_headers, timeout=30)
+    r.raise_for_status()
+    user_data = r.json()
+    user_id = user_data["node_id"]
+
+    repos = []
+    page = 1
+    while True:
+        r = requests.get(
+            "https://api.github.com/user/repos",
+            headers=rest_headers,
+            params={
+                "per_page": 100,
+                "page": page,
+                "affiliation": "owner",
+                "type": "all",
+            },
+            timeout=30,
+        )
+        r.raise_for_status()
+        page_data = r.json()
+        if not page_data:
+            break
+        for repo_data in page_data:
+            if repo_data.get("fork"):
+                continue
+            default_branch = repo_data.get("default_branch")
+            repos.append({
+                "name": repo_data["name"],
+                "isPrivate": repo_data.get("private", False),
+                "defaultBranchRef": (
+                    {"name": default_branch} if default_branch else None
+                ),
+            })
+        if len(page_data) < 100:
+            break
+        page += 1
+
+    return user_id, repos
 
 
 def fetch_commit_stats(owner, repo, branch, since_iso, author_id):
-    """Returns (lifetime_count, recent_count, recent_commit_nodes, languages_edges)."""
+    """Returns (lifetime_count, recent_count, recent_commit_nodes, languages_edges).
+
+    Raises on unrecoverable errors. Caller should NOT swallow these — letting
+    them propagate ensures we never deploy partial data. The retry logic in
+    gql() already absorbs transient failures.
+    """
     query = """
     query($owner: String!, $repo: String!, $branch: String!,
           $since: GitTimestamp!, $authorId: ID!) {
@@ -113,28 +149,25 @@ def fetch_commit_stats(owner, repo, branch, since_iso, author_id):
       }
     }
     """
-    try:
-        data = gql(query, {
-            "owner": owner, "repo": repo, "branch": branch,
-            "since": since_iso, "authorId": author_id,
-        })
-        repo_data = data.get("repository") or {}
-        lang_edges = (repo_data.get("languages") or {}).get("edges", [])
-        ref = repo_data.get("ref")
-        if not ref or not ref.get("target"):
-            return 0, 0, [], lang_edges
-        target = ref["target"]
-        lifetime_count = (target.get("lifetime") or {}).get("totalCount", 0)
-        recent = target.get("recent") or {}
-        return (
-            lifetime_count,
-            recent.get("totalCount", 0),
-            recent.get("nodes", []),
-            lang_edges,
-        )
-    except Exception as e:
-        sys.stderr.write(f"warn: could not fetch {owner}/{repo}: {e}\n")
-        return 0, 0, [], []
+    data = gql(query, {
+        "owner": owner, "repo": repo, "branch": branch,
+        "since": since_iso, "authorId": author_id,
+    })
+    repo_data = data.get("repository") or {}
+    lang_edges = (repo_data.get("languages") or {}).get("edges", [])
+    ref = repo_data.get("ref")
+    if not ref or not ref.get("target"):
+        # Repo has no default branch / empty repo — legitimate, not a failure.
+        return 0, 0, [], lang_edges
+    target = ref["target"]
+    lifetime_count = (target.get("lifetime") or {}).get("totalCount", 0)
+    recent = target.get("recent") or {}
+    return (
+        lifetime_count,
+        recent.get("totalCount", 0),
+        recent.get("nodes", []),
+        lang_edges,
+    )
 
 
 def fetch_merged_prs(user, since_iso=None):
@@ -334,6 +367,16 @@ def main():
                 last_label = "private project" if repo["isPrivate"] else repo["name"]
 
     lifetime_prs = fetch_merged_prs(USER, since_iso=None)
+
+    # Sanity guard: if we have repos but zero lifetime commits, something is
+    # structurally wrong (schema drift, auth issue, etc.). Aborting preserves
+    # the last good digest on the branch instead of overwriting with bad data.
+    if lifetime_commits == 0 and len(repos) > 0:
+        sys.stderr.write(
+            f"Suspicious data: 0 lifetime commits across {len(repos)} repos. "
+            "Aborting deploy to preserve last good digest.\n"
+        )
+        sys.exit(1)
 
     last_str = (
         f"{humanize_ago(last_dt)} · {last_label}" if last_dt else "no recent activity"
