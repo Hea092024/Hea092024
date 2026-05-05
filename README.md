@@ -68,7 +68,6 @@ The Scout never predicts. It reads intel — injuries, suspensions, form, rotati
 <h3 align="center">📊 Activity</h3>
 
 <div align="center">
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=Hea092024&hide_border=true&background=0E1116&stroke=252A33&ring=4F8FFF&fire=FBA94A&currStreakLabel=4F8FFF&sideLabels=8B95A7&dates=8B95A7" />
-  <br/><br/>
-  <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/output/github-contribution-grid-snake.svg" alt="Snake Animation" />
+  <img height="170" src="https://streak-stats.demolab.com/?user=Hea092024&hide_border=true&background=0E1116&stroke=252A33&ring=4F8FFF&fire=FBA94A&currStreakLabel=4F8FFF&sideLabels=8B95A7&dates=8B95A7" />
+  <img height="170" src="https://github-readme-stats.vercel.app/api/top-langs/?username=Hea092024&layout=compact&hide_border=true&bg_color=0E1116&title_color=4F8FFF&text_color=E8ECF1&langs_count=8" />
 </div>
