@@ -22,7 +22,7 @@
   <img src="https://betting-ai-pro.vercel.app/BettingAi.png" width="220" alt="BettingAi" />
   <h3><a href="https://betting-ai-pro.vercel.app">BettingAIPro</a> &nbsp;<sub>· <em>live</em></sub></h3>
   <p><em>An AI sports prediction app — a two-model pipeline that turns live football data into probability-graded bets with Kelly-sized stakes.</em></p>
-  <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/main/pipeline.svg" alt="BettingAIPro prediction pipeline" />
+  <img src="./pipeline.svg" alt="BettingAIPro prediction pipeline" />
 </div>
 
 The Scout never predicts. It reads intel (injuries, suspensions, form, rotation risk) and emits bounded numeric deltas — max ±2.5 xG on injuries, ±1.0 on suspensions — into a deterministic Dixon-Coles Poisson engine. The Judge then re-grades the math. Three roles, sharply separated: extractive LLM → pure math → judgment LLM. Every prediction is auditable down to which intel line moved which xG component.
