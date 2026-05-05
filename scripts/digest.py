@@ -32,7 +32,7 @@ HEADERS = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json
 WINDOW_DAYS = 7
 
 
-def gql(query, variables=None, max_retries=3):
+def gql(query, variables=None, max_retries=5):
     body = {"query": query, "variables": variables or {}}
     last_response = None
     for attempt in range(max_retries):
@@ -41,7 +41,7 @@ def gql(query, variables=None, max_retries=3):
             last_response = r
             # Retry on transient server errors
             if r.status_code in (502, 503, 504) and attempt < max_retries - 1:
-                time.sleep(2 ** attempt)  # 1s, 2s
+                time.sleep(min(2 ** attempt, 8))  # 1, 2, 4, 8, 8
                 continue
             r.raise_for_status()
             payload = r.json()
@@ -51,10 +51,9 @@ def gql(query, variables=None, max_retries=3):
             return payload["data"]
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(min(2 ** attempt, 8))
                 continue
             raise
-    # All retries exhausted with 5xx
     sys.stderr.write(
         f"GraphQL request failed after {max_retries} attempts: "
         f"HTTP {last_response.status_code if last_response else '?'}\n"
@@ -70,19 +69,12 @@ def fetch_user_and_repos(user):
         repositories(
           first: 100,
           ownerAffiliations: OWNER,
-          isFork: false,
-          orderBy: {field: UPDATED_AT, direction: DESC}
+          isFork: false
         ) {
           nodes {
             name
             isPrivate
             defaultBranchRef { name }
-            languages(first: 10) {
-              edges {
-                size
-                node { name }
-              }
-            }
           }
         }
       }
@@ -94,11 +86,17 @@ def fetch_user_and_repos(user):
 
 
 def fetch_commit_stats(owner, repo, branch, since_iso, author_id):
-    """Returns (lifetime_count, recent_count, recent_commit_nodes)."""
+    """Returns (lifetime_count, recent_count, recent_commit_nodes, languages_edges)."""
     query = """
     query($owner: String!, $repo: String!, $branch: String!,
           $since: GitTimestamp!, $authorId: ID!) {
       repository(owner: $owner, name: $repo) {
+        languages(first: 10) {
+          edges {
+            size
+            node { name }
+          }
+        }
         ref(qualifiedName: $branch) {
           target {
             ... on Commit {
@@ -120,9 +118,11 @@ def fetch_commit_stats(owner, repo, branch, since_iso, author_id):
             "owner": owner, "repo": repo, "branch": branch,
             "since": since_iso, "authorId": author_id,
         })
-        ref = (data.get("repository") or {}).get("ref")
+        repo_data = data.get("repository") or {}
+        lang_edges = (repo_data.get("languages") or {}).get("edges", [])
+        ref = repo_data.get("ref")
         if not ref or not ref.get("target"):
-            return 0, 0, []
+            return 0, 0, [], lang_edges
         target = ref["target"]
         lifetime_count = (target.get("lifetime") or {}).get("totalCount", 0)
         recent = target.get("recent") or {}
@@ -130,10 +130,11 @@ def fetch_commit_stats(owner, repo, branch, since_iso, author_id):
             lifetime_count,
             recent.get("totalCount", 0),
             recent.get("nodes", []),
+            lang_edges,
         )
     except Exception as e:
         sys.stderr.write(f"warn: could not fetch {owner}/{repo}: {e}\n")
-        return 0, 0, []
+        return 0, 0, [], []
 
 
 def fetch_merged_prs(user, since_iso=None):
@@ -301,18 +302,18 @@ def main():
     last_label = None
 
     for repo in repos:
-        # Lifetime language bytes from every owned repo, regardless of recency.
-        for edge in repo.get("languages", {}).get("edges", []):
-            lang_bytes[edge["node"]["name"]] += edge["size"]
-
         branch_ref = repo.get("defaultBranchRef")
         if not branch_ref:
             continue
         branch = branch_ref["name"]
 
-        l_count, r_count, r_nodes = fetch_commit_stats(
+        l_count, r_count, r_nodes, lang_edges = fetch_commit_stats(
             USER, repo["name"], branch, since_iso, user_id
         )
+
+        # Lifetime language bytes from every owned repo
+        for edge in lang_edges:
+            lang_bytes[edge["node"]["name"]] += edge["size"]
 
         if l_count > 0:
             lifetime_commits += l_count
