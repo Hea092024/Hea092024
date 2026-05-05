@@ -20,8 +20,7 @@
   <p><em>An AI sports prediction app — a two-model pipeline that turns live football data into probability-graded bets with Kelly-sized stakes.</em></p>
   <br />
   
-  <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/main/pipeline.svg" alt="BettingAIPro prediction pipeline" />
-  <br /><br />
+<img src="pipeline.svg" alt="BettingAIPro prediction pipeline" />  <br /><br />
   
   <p align="left" style="max-width: 650px; margin: 0 auto; line-height: 1.6;">
     The Scout never predicts. It reads intel — injuries, suspensions, form, rotation risk — and emits bounded numeric deltas (max ±2.5 xG on injuries, ±1.0 on suspensions) into a deterministic Dixon-Coles Poisson engine. The Judge then re-grades the math. Three roles, sharply separated: extractive LLM → pure math → judgment LLM. Every prediction is auditable down to which intel line moved which xG component.
