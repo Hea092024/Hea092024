@@ -34,15 +34,7 @@ The Scout never predicts. It reads intel (injuries, suspensions, form, rotation 
 <h3 align="center">📊 Activity</h3>
 
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://streak-stats.demolab.com/?user=Hea092024&hide_border=true&background=0E1116&stroke=252A33&ring=4F8FFF&fire=FBA94A&currStreakLabel=4F8FFF&sideLabels=E8ECF1&dates=8B95A7" />
-    <source media="(prefers-color-scheme: light)" srcset="https://streak-stats.demolab.com/?user=Hea092024&hide_border=true&background=FFFFFF&stroke=E5E7EB&ring=2563EB&fire=F59E0B&currStreakLabel=2563EB&sideLabels=1F2937&dates=6B7280" />
-    <img src="https://streak-stats.demolab.com/?user=Hea092024&hide_border=true&background=0E1116&stroke=252A33&ring=4F8FFF&fire=FBA94A&currStreakLabel=4F8FFF&sideLabels=E8ECF1&dates=8B95A7" alt="GitHub Streak" />
-  </picture>
+  <img src="https://streak-stats.demolab.com/?user=Hea092024&theme=dark&hide_border=true&background=0E1116&ring=4F8FFF&fire=FBA94A&currStreakLabel=4F8FFF" alt="GitHub Streak" />
   <br/><br/>
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Hea092024/Hea092024/output/github-contribution-grid-snake-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Hea092024/Hea092024/output/github-contribution-grid-snake.svg" />
-    <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/output/github-contribution-grid-snake.svg" alt="Snake Animation" />
-  </picture>
+  <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/output/github-contribution-grid-snake.svg" alt="Snake Animation" />
 </div>
