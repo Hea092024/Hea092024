@@ -90,7 +90,6 @@ def fetch_user_and_repos(user):
                 "per_page": 100,
                 "page": page,
                 "affiliation": "owner",
-                "type": "all",
             },
             timeout=30,
         )
