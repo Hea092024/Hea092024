@@ -1,113 +1,40 @@
 <div align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=30&pause=1000&color=4F8FFF&center=true&vCenter=true&width=600&lines=Hector+Acevedo;Frontend+Engineer+%C2%B7+AI+Systems;Next.js+%C2%B7+TypeScript+%C2%B7+LLM+Pipelines" alt="Typing SVG" />
+  <a href="https://github.com/DenverCoder1/readme-typing-svg" target="_blank">
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=30&pause=1000&color=4F8FFF&center=true&vCenter=true&width=540&lines=Hi%2C+I'm+Hector;Frontend+%C2%B7+Python+%C2%B7+LLM+pipelines;Currently+building+BettingAIPro" alt="Typing SVG" />
+  </a>
 </div>
 
 <p align="center">
-  <strong>Frontend engineer building deterministic systems powered by LLM pipelines.</strong>
+  <em>Frontend dev building Python backends with LLM pipelines.</em>
 </p>
 
 <p align="center">
   <a href="https://hectoracevedo.net" target="_blank">
-    <img src="https://img.shields.io/badge/Portfolio-hectoracevedo.net-4F8FFF?style=for-the-badge&logo=google-chrome&logoColor=white" />
+    <img src="https://img.shields.io/badge/Website-hectoracevedo.net-4F8FFF?style=for-the-badge&logo=google-chrome&logoColor=white" />
   </a>
 </p>
 
 ---
 
-## 🚧 Current Focus
-
-### BettingAIPro · <sub>live</sub>
+<h3 align="center">🚧 Currently building</h3>
 
 <div align="center">
-  <img src="https://betting-ai-pro.vercel.app/BettingAi.png" width="240" alt="BettingAIPro UI" />
+  <img src="https://betting-ai-pro.vercel.app/BettingAi.png" width="220" alt="BettingAi" />
+  <h3><a href="https://betting-ai-pro.vercel.app">BettingAIPro</a> &nbsp;<sub>· <em>live</em></sub></h3>
+  <p><em>An AI sports prediction app — a two-model pipeline that turns live football data into probability-graded bets with Kelly-sized stakes.</em></p>
+  <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/main/pipeline.svg" alt="BettingAIPro prediction pipeline" />
 </div>
 
-AI-driven football prediction system combining **LLM extraction + statistical modeling + probabilistic decision-making**.
+The Scout never predicts. It reads intel (injuries, suspensions, form, rotation risk) and emits bounded numeric deltas — max ±2.5 xG on injuries, ±1.0 on suspensions — into a deterministic Dixon-Coles Poisson engine. The Judge then re-grades the math. Three roles, sharply separated: extractive LLM → pure math → judgment LLM. Every prediction is auditable down to which intel line moved which xG component.
+
+**Stack** &nbsp;·&nbsp; Next.js 16 · React 19 · TypeScript · Tailwind 4 &nbsp;·&nbsp; FastAPI · PostgreSQL (Supabase) &nbsp;·&nbsp; Groq (Qwen3 32B) · Gemini 3.1 Pro &nbsp;·&nbsp; Discord.py for bots
 
 ---
 
-### 🧠 System Design
+<h3 align="center">📊 Activity</h3>
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/main/pipeline.svg" alt="Prediction pipeline" />
-</div>
-
-**Pipeline architecture:**
-
-* **Extraction layer (LLM)**
-  Parses injuries, suspensions, form, and rotation risk into structured signals
-
-* **Model layer (deterministic)**
-  Dixon–Coles Poisson model with bounded inputs
-  → Injury impact: ±2.5 xG
-  → Suspensions: ±1.0 xG
-
-* **Evaluation layer (LLM)**
-  Re-grades outputs and assigns probabilistic confidence
-
----
-
-### 📊 Key Properties
-
-* Deterministic core (no black-box predictions)
-* Fully auditable pipeline (traceable input → output)
-* Separation of concerns (LLM ≠ model ≠ evaluation)
-* Probability-calibrated outputs with Kelly staking
-
----
-
-### 📈 (Add your real metrics here)
-
-<!-- Replace this section when you have data -->
-
-* Backtested matches: XXXX
-* ROI: XX%
-* Calibration score (Brier): X.XX
-* Avg edge per bet: X.X%
-
----
-
-## 🧩 Core Stack
-
-**Frontend**
-
-* Next.js 16 · React 19 · TypeScript
-* Tailwind CSS
-
-**Backend**
-
-* FastAPI (Python)
-* PostgreSQL (Supabase)
-
-**AI / Data**
-
-* Groq (Qwen3 32B)
-* Gemini 3.1 Pro
-* Structured LLM pipelines
-
----
-
-## ⚙️ What I Actually Build
-
-* Typed, scalable frontend systems (Next.js + TS)
-* LLM pipelines with strict constraints (not prompt spaghetti)
-* Hybrid architectures (AI + deterministic models)
-* Data-driven interfaces with real-time inputs
-
----
-
-## 📌 Status
-
-Open to:
-
-* Frontend / Fullstack roles
-* AI-assisted product teams
-* Data-heavy applications
-
----
-
-## 📊 Activity
-
-<div align="center">
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=Hea092024&hide_border=true&background=0E1116&stroke=252A33&ring=4F8FFF&fire=FBA94A&currStreakLabel=4F8FFF&sideLabels=8B95A7&dates=8B95A7" />
+  <img src="https://streak-stats.demolab.com/?user=Hea092024&hide_border=true&background=0E1116&stroke=252A33&ring=4F8FFF&fire=FBA94A&currStreakLabel=4F8FFF&sideLabels=8B95A7&dates=8B95A7" />
+  <br/><br/>
+  <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/output/github-contribution-grid-snake.svg" alt="Snake Animation" />
 </div>
