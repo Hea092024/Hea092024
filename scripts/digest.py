@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Generate a weekly git activity digest as an SVG.
+Generate a lifetime + weekly git activity digest as an SVG.
 
-Pulls aggregate stats from GitHub GraphQL API for the authenticated user's
-own repositories (including private), and renders a Bloomberg-terminal styled
-summary. The output SVG never exposes commit messages or private repo names.
+Headline numbers are lifetime totals (all-time commits, repos with activity,
+PRs merged). Languages are computed from total code bytes across all owned,
+non-fork repos. "This week" is a smaller freshness indicator. PEAK and LAST
+reflect the past 7 days.
 
 Required env vars:
     STATS_TOKEN  - GitHub PAT with read-only 'repo' scope
@@ -27,7 +28,6 @@ if not USER or not TOKEN:
 
 GRAPHQL_URL = "https://api.github.com/graphql"
 HEADERS = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
-
 WINDOW_DAYS = 7
 
 
@@ -60,8 +60,13 @@ def fetch_user_and_repos(user):
           nodes {
             name
             isPrivate
-            primaryLanguage { name }
             defaultBranchRef { name }
+            languages(first: 10) {
+              edges {
+                size
+                node { name }
+              }
+            }
           }
         }
       }
@@ -72,7 +77,8 @@ def fetch_user_and_repos(user):
     return u["id"], u["repositories"]["nodes"]
 
 
-def fetch_recent_commits(owner, repo, branch, since_iso, author_id):
+def fetch_commit_stats(owner, repo, branch, since_iso, author_id):
+    """Returns (lifetime_count, recent_count, recent_commit_nodes)."""
     query = """
     query($owner: String!, $repo: String!, $branch: String!,
           $since: GitTimestamp!, $authorId: ID!) {
@@ -80,7 +86,11 @@ def fetch_recent_commits(owner, repo, branch, since_iso, author_id):
         ref(qualifiedName: $branch) {
           target {
             ... on Commit {
-              history(since: $since, author: { id: $authorId }, first: 100) {
+              lifetime: history(author: { id: $authorId }) {
+                totalCount
+              }
+              recent: history(since: $since, author: { id: $authorId }, first: 100) {
+                totalCount
                 nodes { committedDate }
               }
             }
@@ -96,32 +106,42 @@ def fetch_recent_commits(owner, repo, branch, since_iso, author_id):
         })
         ref = (data.get("repository") or {}).get("ref")
         if not ref or not ref.get("target"):
-            return []
-        return ref["target"]["history"]["nodes"]
+            return 0, 0, []
+        target = ref["target"]
+        lifetime_count = (target.get("lifetime") or {}).get("totalCount", 0)
+        recent = target.get("recent") or {}
+        return (
+            lifetime_count,
+            recent.get("totalCount", 0),
+            recent.get("nodes", []),
+        )
     except Exception as e:
         sys.stderr.write(f"warn: could not fetch {owner}/{repo}: {e}\n")
-        return []
+        return 0, 0, []
 
 
-def fetch_merged_prs(user, since_iso):
-    since_date = since_iso.split("T")[0]
-    q = f"author:{user} is:pr is:merged merged:>={since_date} user:{user}"
+def fetch_merged_prs(user, since_iso=None):
+    if since_iso:
+        since_date = since_iso.split("T")[0]
+        q = f"author:{user} is:pr is:merged merged:>={since_date} user:{user}"
+    else:
+        q = f"author:{user} is:pr is:merged user:{user}"
     query = "query($q: String!) { search(query: $q, type: ISSUE) { issueCount } }"
     return gql(query, {"q": q})["search"]["issueCount"]
 
 
 def humanize_ago(dt):
     delta = datetime.now(timezone.utc) - dt
-    seconds = int(delta.total_seconds())
-    if seconds < 60:
+    s = int(delta.total_seconds())
+    if s < 60:
         return "just now"
-    if seconds < 3600:
-        m = seconds // 60
+    if s < 3600:
+        m = s // 60
         return f"{m} min{'s' if m != 1 else ''} ago"
-    if seconds < 86400:
-        h = seconds // 3600
+    if s < 86400:
+        h = s // 3600
         return f"{h} hour{'s' if h != 1 else ''} ago"
-    d = seconds // 86400
+    d = s // 86400
     return f"{d} day{'s' if d != 1 else ''} ago"
 
 
@@ -136,7 +156,6 @@ def find_peak_window(commit_times):
             best_count = c
             best_start = start
     end = (best_start + 4) % 24
-
     weekdays = sum(1 for dt in commit_times if dt.weekday() < 5)
     weekends = sum(1 for dt in commit_times if dt.weekday() >= 5)
     if weekdays >= weekends * 2:
@@ -149,35 +168,61 @@ def find_peak_window(commit_times):
     return f"{best_start:02d}:00 – {end:02d}:00 · {suffix}"
 
 
-def top_languages(lang_counter, limit=2):
-    total = sum(lang_counter.values())
+def top_three(counter, limit=2):
+    """Top N + 'Other', padded to 3 entries."""
+    total = sum(counter.values())
     if total == 0:
         return [("—", 0), ("—", 0), ("—", 0)]
-    sorted_langs = sorted(lang_counter.items(), key=lambda x: x[1], reverse=True)
+    sorted_items = sorted(counter.items(), key=lambda x: x[1], reverse=True)
     top = []
-    other_count = 0
-    for i, (name, count) in enumerate(sorted_langs):
+    other = 0
+    for i, (name, count) in enumerate(sorted_items):
         if i < limit:
             top.append((name, round(100 * count / total)))
         else:
-            other_count += count
-    if other_count > 0:
-        top.append(("Other", round(100 * other_count / total)))
+            other += count
+    if other > 0:
+        top.append(("Other", round(100 * other / total)))
     while len(top) < 3:
         top.append(("—", 0))
-    # fix rounding so total <= 100
     return top[:3]
 
 
+def render_headline(stats):
+    """Dynamically position the all-time headline numbers + labels."""
+    char_w_big = 14   # monospace font-size 22, weight 700
+    char_w_lbl = 8    # monospace font-size 13
+    items = [
+        (stats["lifetime_commits"], "commits"),
+        (stats["lifetime_repos"], "repos"),
+        (stats["lifetime_prs"], "PRs merged"),
+    ]
+    parts = []
+    cursor = 22
+    for num, label in items:
+        num_str = str(num)
+        num_w = len(num_str) * char_w_big
+        label_x = cursor + num_w + 8
+        label_w = len(label) * char_w_lbl
+        parts.append(
+            f'<text x="{cursor}" y="132" fill="#FBA94A" font-size="22" font-weight="700">{num}</text>'
+            f'<text x="{label_x}" y="132" fill="#E8ECF1" font-size="13">{label}</text>'
+        )
+        cursor = label_x + label_w + 30
+    return "\n".join(parts)
+
+
 def render(stats):
-    bar_max = 380
+    BAR_MAX = 380
     langs = stats["languages"]
 
     def bw(p):
-        return max(0, min(bar_max, int(round(bar_max * p / 100))))
+        return max(0, min(BAR_MAX, int(round(BAR_MAX * p / 100))))
 
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="350" viewBox="0 0 680 350" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
-<rect width="680" height="350" rx="12" fill="#0E1116"/>
+    headline = render_headline(stats)
+
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="390" viewBox="0 0 680 390" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
+<rect width="680" height="390" rx="12" fill="#0E1116"/>
 <rect x="0" y="0" width="680" height="32" rx="12" fill="#161A21"/>
 <rect x="0" y="20" width="680" height="12" fill="#161A21"/>
 <circle cx="22" cy="16" r="5" fill="#FF5F57"/>
@@ -185,16 +230,11 @@ def render(stats):
 <circle cx="58" cy="16" r="5" fill="#4F8FFF"/>
 <text x="340" y="20" text-anchor="middle" fill="#8B95A7" font-size="11" letter-spacing="2">~/GIT-DIGEST</text>
 <text x="22" y="62" fill="#FBA94A" font-size="13" font-weight="600">$</text>
-<text x="38" y="62" fill="#E8ECF1" font-size="13">git digest --weekly</text>
+<text x="38" y="62" fill="#E8ECF1" font-size="13">git digest --all-time</text>
 
-<text x="22" y="98" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">THIS WEEK</text>
+<text x="22" y="98" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">ALL TIME</text>
 <line x1="22" y1="106" x2="658" y2="106" stroke="#252A33" stroke-width="1"/>
-<text x="22" y="132" fill="#FBA94A" font-size="22" font-weight="700">{stats["commits"]}</text>
-<text x="80" y="132" fill="#E8ECF1" font-size="13">commits</text>
-<text x="180" y="132" fill="#FBA94A" font-size="22" font-weight="700">{stats["repos"]}</text>
-<text x="210" y="132" fill="#E8ECF1" font-size="13">repos</text>
-<text x="278" y="132" fill="#FBA94A" font-size="22" font-weight="700">{stats["prs"]}</text>
-<text x="308" y="132" fill="#E8ECF1" font-size="13">PRs merged</text>
+{headline}
 
 <text x="22" y="172" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">LANGUAGES</text>
 <line x1="22" y1="180" x2="658" y2="180" stroke="#252A33" stroke-width="1"/>
@@ -214,13 +254,17 @@ def render(stats):
 <rect x="140" y="236" width="{bw(langs[2][1])}" height="10" rx="2" fill="#4F8FFF"/>
 <text x="540" y="246" fill="#8B95A7" font-size="12">{langs[2][1]}%</text>
 
-<text x="22" y="282" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">PEAK</text>
-<text x="80" y="282" fill="#E8ECF1" font-size="12">{stats["peak"]}</text>
-<text x="22" y="304" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">LAST</text>
-<text x="80" y="304" fill="#E8ECF1" font-size="12">{stats["last"]}</text>
+<text x="22" y="286" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">THIS WEEK</text>
+<text x="120" y="286" fill="#E8ECF1" font-size="12">{stats["weekly_commits"]} commits · {stats["weekly_repos"]} repos · last 7 days</text>
 
-<line x1="22" y1="324" x2="658" y2="324" stroke="#252A33" stroke-width="1"/>
-<text x="22" y="342" fill="#8B95A7" font-size="11">generated by github action · refreshed {stats["generated_at"]}</text>
+<text x="22" y="308" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">PEAK</text>
+<text x="120" y="308" fill="#E8ECF1" font-size="12">{stats["peak"]}</text>
+
+<text x="22" y="330" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">LAST</text>
+<text x="120" y="330" fill="#E8ECF1" font-size="12">{stats["last"]}</text>
+
+<line x1="22" y1="354" x2="658" y2="354" stroke="#252A33" stroke-width="1"/>
+<text x="22" y="372" fill="#8B95A7" font-size="11">generated by github action · refreshed {stats["generated_at"]}</text>
 </svg>'''
 
 
@@ -230,52 +274,62 @@ def main():
 
     user_id, repos = fetch_user_and_repos(USER)
 
-    total_commits = 0
-    repos_with_commits = set()
-    lang_commit_count = Counter()
-    all_commit_times = []
-    last_commit_dt = None
-    last_commit_label = None
+    lifetime_commits = 0
+    lifetime_repos = 0
+    lang_bytes = Counter()
+
+    weekly_commits = 0
+    weekly_repos = set()
+    weekly_times = []
+    last_dt = None
+    last_label = None
 
     for repo in repos:
+        # Lifetime language bytes from every owned repo, regardless of recency.
+        for edge in repo.get("languages", {}).get("edges", []):
+            lang_bytes[edge["node"]["name"]] += edge["size"]
+
         branch_ref = repo.get("defaultBranchRef")
         if not branch_ref:
             continue
         branch = branch_ref["name"]
-        commits = fetch_recent_commits(USER, repo["name"], branch, since_iso, user_id)
-        if not commits:
-            continue
 
-        total_commits += len(commits)
-        repos_with_commits.add(repo["name"])
+        l_count, r_count, r_nodes = fetch_commit_stats(
+            USER, repo["name"], branch, since_iso, user_id
+        )
 
-        primary_lang = repo.get("primaryLanguage")
-        if primary_lang:
-            lang_commit_count[primary_lang["name"]] += len(commits)
+        if l_count > 0:
+            lifetime_commits += l_count
+            lifetime_repos += 1
 
-        for c in commits:
+        if r_count > 0:
+            weekly_commits += r_count
+            weekly_repos.add(repo["name"])
+
+        for c in r_nodes:
             try:
                 dt = datetime.fromisoformat(c["committedDate"].replace("Z", "+00:00"))
             except Exception:
                 continue
-            all_commit_times.append(dt)
-            if last_commit_dt is None or dt > last_commit_dt:
-                last_commit_dt = dt
-                last_commit_label = "private project" if repo["isPrivate"] else repo["name"]
+            weekly_times.append(dt)
+            if last_dt is None or dt > last_dt:
+                last_dt = dt
+                last_label = "private project" if repo["isPrivate"] else repo["name"]
 
-    prs = fetch_merged_prs(USER, since_iso)
+    lifetime_prs = fetch_merged_prs(USER, since_iso=None)
 
-    if last_commit_dt:
-        last_str = f"{humanize_ago(last_commit_dt)} · {last_commit_label}"
-    else:
-        last_str = "no recent activity"
+    last_str = (
+        f"{humanize_ago(last_dt)} · {last_label}" if last_dt else "no recent activity"
+    )
 
     stats = {
-        "commits": total_commits,
-        "repos": len(repos_with_commits),
-        "prs": prs,
-        "languages": top_languages(lang_commit_count),
-        "peak": find_peak_window(all_commit_times),
+        "lifetime_commits": lifetime_commits,
+        "lifetime_repos": lifetime_repos,
+        "lifetime_prs": lifetime_prs,
+        "languages": top_three(lang_bytes),
+        "weekly_commits": weekly_commits,
+        "weekly_repos": len(weekly_repos),
+        "peak": find_peak_window(weekly_times),
         "last": last_str,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
     }
