@@ -34,7 +34,7 @@ The Scout never predicts. It reads intel (injuries, suspensions, form, rotation 
 <h3 align="center">📊 Activity</h3>
 
 <div align="center">
-  <img src="https://streak-stats.demolab.com/?user=Hea092024&theme=dark&hide_border=true&background=0E1116&ring=4F8FFF&fire=FBA94A&currStreakLabel=4F8FFF" alt="GitHub Streak" />
+  <img src="https://github-readme-streak-stats.herokuapp.com/?user=Hea092024&theme=radical&hide_border=true&background=141321" />  
   <br/><br/>
   <img src="https://raw.githubusercontent.com/Hea092024/Hea092024/output/github-contribution-grid-snake.svg" alt="Snake Animation" />
 </div>
