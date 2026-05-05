@@ -205,20 +205,30 @@ def find_peak_window(commit_times):
             best_count = c
             best_start = start
     end = (best_start + 4) % 24
+    base = f"{best_start:02d}:00 – {end:02d}:00"
     weekdays = sum(1 for dt in commit_times if dt.weekday() < 5)
     weekends = sum(1 for dt in commit_times if dt.weekday() >= 5)
     if weekdays >= weekends * 2:
-        period = "mornings" if best_start < 12 else "afternoons" if best_start < 17 else "evenings"
-        suffix = f"weekday {period}"
-    elif weekends > weekdays * 2:
-        suffix = "weekends"
-    else:
-        suffix = "across the week"
-    return f"{best_start:02d}:00 – {end:02d}:00 · {suffix}"
+        return f"{base} · weekdays"
+    if weekends > weekdays * 2:
+        return f"{base} · weekends"
+    # No clear day-pattern — describe time of day instead.
+    if 6 <= best_start < 12:
+        return f"{base} · mornings"
+    if 12 <= best_start < 17:
+        return f"{base} · afternoons"
+    if 17 <= best_start < 22:
+        return f"{base} · evenings"
+    return f"{base} · late nights"
 
 
-def top_three(counter, limit=2):
-    """Top N + 'Other', padded to 3 entries."""
+def top_languages(counter, limit=3, min_other_pct=2):
+    """Top N languages + 'Other' if remainder >= min_other_pct.
+
+    Returns a list of (name, percent) tuples. Length is variable: typically 3
+    when the user has 3 dominant languages, or 4 when there's a meaningful
+    long tail. Pads to minimum 3 entries with placeholders if data is sparse.
+    """
     total = sum(counter.values())
     if total == 0:
         return [("—", 0), ("—", 0), ("—", 0)]
@@ -230,34 +240,36 @@ def top_three(counter, limit=2):
             top.append((name, round(100 * count / total)))
         else:
             other += count
-    if other > 0:
-        top.append(("Other", round(100 * other / total)))
+    other_pct = round(100 * other / total)
+    if other_pct >= min_other_pct:
+        top.append(("Other", other_pct))
     while len(top) < 3:
         top.append(("—", 0))
-    return top[:3]
+    return top
 
 
 def render_headline(stats):
-    """Dynamically position the all-time headline numbers + labels."""
-    char_w_big = 14   # monospace font-size 22, weight 700
-    char_w_lbl = 8    # monospace font-size 13
+    """Lifetime headline with visual hierarchy: commits is the hero (22pt),
+    repos and PRs are subordinated (18pt). All baseline-aligned at y=132."""
+    # (value, label, num_font_size, num_char_w, gap_to_label)
     items = [
-        (stats["lifetime_commits"], "commits"),
-        (stats["lifetime_repos"], "repos"),
-        (stats["lifetime_prs"], "PRs merged"),
+        (stats["lifetime_commits"], "commits", 22, 14, 8),
+        (stats["lifetime_repos"], "repos", 18, 11, 6),
+        (stats["lifetime_prs"], "PRs merged", 18, 11, 6),
     ]
     parts = []
     cursor = 22
-    for num, label in items:
+    y = 132
+    for num, label, num_size, num_char_w, gap in items:
         num_str = str(num)
-        num_w = len(num_str) * char_w_big
-        label_x = cursor + num_w + 8
-        label_w = len(label) * char_w_lbl
+        num_w = len(num_str) * num_char_w
+        label_x = cursor + num_w + gap
+        label_w = len(label) * 8
         parts.append(
-            f'<text x="{cursor}" y="132" fill="#FBA94A" font-size="22" font-weight="700">{num}</text>'
-            f'<text x="{label_x}" y="132" fill="#E8ECF1" font-size="13">{label}</text>'
+            f'<text x="{cursor}" y="{y}" fill="#FBA94A" font-size="{num_size}" font-weight="700">{num}</text>'
+            f'<text x="{label_x}" y="{y}" fill="#E8ECF1" font-size="13">{label}</text>'
         )
-        cursor = label_x + label_w + 30
+        cursor = label_x + label_w + 28
     return "\n".join(parts)
 
 
@@ -270,8 +282,32 @@ def render(stats):
 
     headline = render_headline(stats)
 
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="390" viewBox="0 0 680 390" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
-<rect width="680" height="390" rx="12" fill="#0E1116"/>
+    # Render language bars dynamically (3 or 4 rows depending on tail).
+    lang_rows = []
+    row_top = 192
+    for name, pct in langs:
+        text_y = row_top + 10
+        lang_rows.append(
+            f'<text x="22" y="{text_y}" fill="#E8ECF1" font-size="12">{name}</text>'
+            f'<rect x="140" y="{row_top}" width="380" height="10" rx="2" fill="#161A21"/>'
+            f'<rect x="140" y="{row_top}" width="{bw(pct)}" height="10" rx="2" fill="#4F8FFF"/>'
+            f'<text x="540" y="{text_y}" fill="#8B95A7" font-size="12">{pct}%</text>'
+        )
+        row_top += 22
+    lang_rows_str = "\n".join(lang_rows)
+
+    # Position sections below languages with consistent gap regardless of row count.
+    n = len(langs)
+    last_lang_text_y = 202 + (n - 1) * 22
+    week_y = last_lang_text_y + 40
+    peak_y = week_y + 22
+    last_y = peak_y + 22
+    footer_line_y = last_y + 24
+    footer_text_y = footer_line_y + 18
+    svg_height = footer_text_y + 18
+
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="{svg_height}" viewBox="0 0 680 {svg_height}" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
+<rect width="680" height="{svg_height}" rx="12" fill="#0E1116"/>
 <rect x="0" y="0" width="680" height="32" rx="12" fill="#161A21"/>
 <rect x="0" y="20" width="680" height="12" fill="#161A21"/>
 <circle cx="22" cy="16" r="5" fill="#FF5F57"/>
@@ -288,32 +324,19 @@ def render(stats):
 <text x="22" y="172" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">LANGUAGES</text>
 <line x1="22" y1="180" x2="658" y2="180" stroke="#252A33" stroke-width="1"/>
 
-<text x="22" y="202" fill="#E8ECF1" font-size="12">{langs[0][0]}</text>
-<rect x="140" y="192" width="380" height="10" rx="2" fill="#161A21"/>
-<rect x="140" y="192" width="{bw(langs[0][1])}" height="10" rx="2" fill="#4F8FFF"/>
-<text x="540" y="202" fill="#8B95A7" font-size="12">{langs[0][1]}%</text>
+{lang_rows_str}
 
-<text x="22" y="224" fill="#E8ECF1" font-size="12">{langs[1][0]}</text>
-<rect x="140" y="214" width="380" height="10" rx="2" fill="#161A21"/>
-<rect x="140" y="214" width="{bw(langs[1][1])}" height="10" rx="2" fill="#4F8FFF"/>
-<text x="540" y="224" fill="#8B95A7" font-size="12">{langs[1][1]}%</text>
+<text x="22" y="{week_y}" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">THIS WEEK</text>
+<text x="120" y="{week_y}" fill="#E8ECF1" font-size="12">{stats["weekly_commits"]} commits · {stats["weekly_repos"]} repos · last 7 days</text>
 
-<text x="22" y="246" fill="#E8ECF1" font-size="12">{langs[2][0]}</text>
-<rect x="140" y="236" width="380" height="10" rx="2" fill="#161A21"/>
-<rect x="140" y="236" width="{bw(langs[2][1])}" height="10" rx="2" fill="#4F8FFF"/>
-<text x="540" y="246" fill="#8B95A7" font-size="12">{langs[2][1]}%</text>
+<text x="22" y="{peak_y}" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">PEAK</text>
+<text x="120" y="{peak_y}" fill="#E8ECF1" font-size="12">{stats["peak"]}</text>
 
-<text x="22" y="286" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">THIS WEEK</text>
-<text x="120" y="286" fill="#E8ECF1" font-size="12">{stats["weekly_commits"]} commits · {stats["weekly_repos"]} repos · last 7 days</text>
+<text x="22" y="{last_y}" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">LAST</text>
+<text x="120" y="{last_y}" fill="#E8ECF1" font-size="12">{stats["last"]}</text>
 
-<text x="22" y="308" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">PEAK</text>
-<text x="120" y="308" fill="#E8ECF1" font-size="12">{stats["peak"]}</text>
-
-<text x="22" y="330" fill="#4F8FFF" font-size="11" letter-spacing="2" font-weight="700">LAST</text>
-<text x="120" y="330" fill="#E8ECF1" font-size="12">{stats["last"]}</text>
-
-<line x1="22" y1="354" x2="658" y2="354" stroke="#252A33" stroke-width="1"/>
-<text x="22" y="372" fill="#8B95A7" font-size="11">generated by github action · refreshed {stats["generated_at"]}</text>
+<line x1="22" y1="{footer_line_y}" x2="658" y2="{footer_line_y}" stroke="#252A33" stroke-width="1"/>
+<text x="22" y="{footer_text_y}" fill="#8B95A7" font-size="11">generated by github action · refreshed {stats["generated_at"]}</text>
 </svg>'''
 
 
@@ -385,7 +408,7 @@ def main():
         "lifetime_commits": lifetime_commits,
         "lifetime_repos": lifetime_repos,
         "lifetime_prs": lifetime_prs,
-        "languages": top_three(lang_bytes),
+        "languages": top_languages(lang_bytes),
         "weekly_commits": weekly_commits,
         "weekly_repos": len(weekly_repos),
         "peak": find_peak_window(weekly_times),
