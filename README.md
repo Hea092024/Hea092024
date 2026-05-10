@@ -11,7 +11,6 @@
     <img src="https://img.shields.io/badge/Website-hectoracevedo.net-4F8FFF?style=for-the-badge&logo=google-chrome&logoColor=white" />
   </a>
 </p>
----
 <h3 align="center">🚧 Currently building</h3>
 <div align="center">
   <img src="https://betting-ai-pro.vercel.app/BettingAi.png" width="220" alt="BettingAi" />
