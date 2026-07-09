@@ -1,15 +1,12 @@
 name: Generate Git Digest
-
 on:
   schedule:
     - cron: "*/30 * * * *"
   push:
     branches: [main]
   workflow_dispatch:
-
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -17,16 +14,13 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v4.2.2
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.4.0
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: pip install requests
-
       - name: Generate digest SVG
         run: |
           mkdir -p dist
@@ -35,9 +29,8 @@ jobs:
           STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
           GITHUB_USER: Hea092024
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Publish to digest branch
-        uses: crazy-max/ghaction-github-pages@v3.2.0
+        uses: crazy-max/ghaction-github-pages@v4.0.0
         with:
           target_branch: digest
           build_dir: dist
